@@ -15,17 +15,51 @@ provider "aws" {
   region = var.aws_region
 }
 
-# --- 1. BUSCANDO DADOS DO COGNITO DO ESTADO REMOTO ---
-# Este bloco busca os dados do User Pool e App Client que já foram criados
-# no seu outro projeto de infraestrutura.
-data "terraform_remote_state" "cognito" {
-  backend = "s3"
-  config = {
-    # ATENÇÃO: Substitua os valores abaixo pelos do seu projeto do Cognito
-    bucket = "seu-bucket-de-estado-do-cognito"
-    key    = "cognito/terraform.tfstate" # Exemplo do caminho do arquivo de estado
-    region = var.aws_region
+# --- 1. AWS Cognito (Agora parte deste projeto) ---
+
+resource "aws_cognito_user_pool" "main" {
+  name = "SistemaPedidosUserPool"
+
+  password_policy {
+    minimum_length    = 8
+    require_lowercase = false
+    require_numbers   = false
+    require_symbols   = false
+    require_uppercase = false
   }
+
+  # Schema Mínimo e Corrigido
+  schema {
+    name                = "email"
+    attribute_data_type = "String"
+    mutable             = true
+    required            = false
+  }
+
+  schema {
+    name                     = "custom:cpf"
+    attribute_data_type      = "String"
+    mutable                  = true
+    developer_only_attribute = false
+    required                 = false # Não obrigatório na criação
+
+    string_attribute_constraints {
+      min_length = 11
+      max_length = 14
+    }
+  }
+}
+
+resource "aws_cognito_user_pool_client" "main" {
+  name                          = "SistemaPedidosAppClient"
+  user_pool_id                  = aws_cognito_user_pool.main.id
+  generate_secret               = false
+  explicit_auth_flows           = ["ADMIN_NO_SRP_AUTH"]
+  prevent_user_existence_errors = "ENABLED"
+
+  # Sincronia Perfeita com o schema, sem atributos extra
+  read_attributes  = ["email", "custom:cpf"]
+  write_attributes = ["email", "custom:cpf"]
 }
 
 # --- 2. IAM ROLE E POLÍTICA PARA A LAMBDA ---
@@ -50,8 +84,8 @@ resource "aws_iam_policy" "lambda_auth_policy" {
       {
         Action   = ["cognito-idp:ListUsers", "cognito-idp:AdminInitiateAuth"],
         Effect   = "Allow",
-        # Usa o ARN do User Pool buscado do estado remoto
-        Resource = data.terraform_remote_state.cognito.outputs.user_pool_arn
+        # Referência direta ao User Pool criado neste arquivo
+        Resource = aws_cognito_user_pool.main.arn
       },
       {
         Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
@@ -77,13 +111,15 @@ resource "aws_lambda_function" "auth_cpf_lambda" {
 
   s3_bucket        = var.lambda_code_bucket
   s3_key           = "auth-by-cpf/deployment_package.zip"
+  # O hash do código é importante para o Terraform detectar mudanças no .zip
+  # O arquivo .zip precisa existir na pasta raiz antes de rodar 'plan' ou 'apply'
   source_code_hash = filebase64sha256("deployment_package.zip")
 
   environment {
     variables = {
-      # Usa os IDs buscados do estado remoto
-      USER_POOL_ID = data.terraform_remote_state.cognito.outputs.user_pool_id
-      CLIENT_ID    = data.terraform_remote_state.cognito.outputs.client_id
+      # Referências diretas aos recursos do Cognito
+      USER_POOL_ID = aws_cognito_user_pool.main.id
+      CLIENT_ID    = aws_cognito_user_pool_client.main.id
     }
   }
   timeout = 30
@@ -144,9 +180,21 @@ resource "aws_api_gateway_stage" "api_stage" {
   stage_name    = "v1"
 }
 
-# --- OUTPUT ---
+# --- OUTPUTS FINAIS ---
 output "api_endpoint_url" {
-  description = "A URL base para invocar a API"
+  description = "A URL base para invocar a API de autenticação"
   value       = aws_api_gateway_stage.api_stage.invoke_url
 }
 
+output "user_pool_id" {
+  value = aws_cognito_user_pool.main.id
+}
+
+output "client_id" {
+  value = aws_cognito_user_pool_client.main.id
+}
+
+output "user_pool_arn" {
+  description = "O ARN do Cognito User Pool"
+  value       = aws_cognito_user_pool.main.arn
+}
