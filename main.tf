@@ -15,36 +15,17 @@ provider "aws" {
   region = var.aws_region
 }
 
-# --- 1. AWS Cognito (User Pool e App Client) ---
-
-resource "aws_cognito_user_pool" "main" {
-  name = "SistemaPedidosUserPool"
-
-  schema {
-    name                = "email"
-    attribute_data_type = "String"
-    mutable             = true
-    required            = false
+# --- 1. BUSCANDO DADOS DO COGNITO DO ESTADO REMOTO ---
+# Este bloco busca os dados do User Pool e App Client que já foram criados
+# no seu outro projeto de infraestrutura.
+data "terraform_remote_state" "cognito" {
+  backend = "s3"
+  config = {
+    # ATENÇÃO: Substitua os valores abaixo pelos do seu projeto do Cognito
+    bucket = "seu-bucket-de-estado-do-cognito"
+    key    = "cognito/terraform.tfstate" # Exemplo do caminho do arquivo de estado
+    region = var.aws_region
   }
-
-  schema {
-    name                = "custom:cpf"
-    attribute_data_type = "String"
-    mutable             = true
-    string_attribute_constraints {
-      min_length = 11
-      max_length = 14
-    }
-  }
-}
-
-resource "aws_cognito_user_pool_client" "main" {
-  name                = "SistemaPedidosAppClient"
-  user_pool_id        = aws_cognito_user_pool.main.id
-  generate_secret     = false
-  explicit_auth_flows = ["ADMIN_NO_SRP_AUTH"]
-  read_attributes     = ["email", "custom:cpf"]
-  write_attributes    = ["email", "custom:cpf"]
 }
 
 # --- 2. IAM ROLE E POLÍTICA PARA A LAMBDA ---
@@ -69,7 +50,8 @@ resource "aws_iam_policy" "lambda_auth_policy" {
       {
         Action   = ["cognito-idp:ListUsers", "cognito-idp:AdminInitiateAuth"],
         Effect   = "Allow",
-        Resource = aws_cognito_user_pool.main.arn
+        # Usa o ARN do User Pool buscado do estado remoto
+        Resource = data.terraform_remote_state.cognito.outputs.user_pool_arn
       },
       {
         Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
@@ -99,8 +81,9 @@ resource "aws_lambda_function" "auth_cpf_lambda" {
 
   environment {
     variables = {
-      USER_POOL_ID = aws_cognito_user_pool.main.id
-      CLIENT_ID    = aws_cognito_user_pool_client.main.id
+      # Usa os IDs buscados do estado remoto
+      USER_POOL_ID = data.terraform_remote_state.cognito.outputs.user_pool_id
+      CLIENT_ID    = data.terraform_remote_state.cognito.outputs.client_id
     }
   }
   timeout = 30
@@ -166,3 +149,4 @@ output "api_endpoint_url" {
   description = "A URL base para invocar a API"
   value       = aws_api_gateway_stage.api_stage.invoke_url
 }
+
