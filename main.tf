@@ -18,7 +18,9 @@ provider "aws" {
 # --- 1. AWS Cognito ---
 
 resource "aws_cognito_user_pool" "main" {
-  name = "SistemaPedidosUserPool"
+  # --- ALTERAÇÃO APLICADA AQUI ---
+  # Alterando o nome para forçar a recriação do User Pool
+  name = "SistemaPedidosUserPool-v2"
 
   password_policy {
     minimum_length    = 8
@@ -40,7 +42,7 @@ resource "aws_cognito_user_pool" "main" {
     name                     = "custom:cpf"
     attribute_data_type      = "String"
     mutable                  = true
-    developer_only_attribute = false
+    developer_only_attribute = false # <-- Esta linha torna o atributo pesquisável
     required                 = false
 
     string_attribute_constraints {
@@ -51,21 +53,21 @@ resource "aws_cognito_user_pool" "main" {
 }
 
 resource "aws_cognito_user_pool_client" "main" {
-  name                          = "SistemaPedidosAppClient"
+  # --- ALTERAÇÃO APLICADA AQUI ---
+  # Alterando o nome para forçar a recriação do App Client
+  name                          = "SistemaPedidosAppClient-v2"
   user_pool_id                  = aws_cognito_user_pool.main.id
   generate_secret               = false
   explicit_auth_flows           = ["ADMIN_NO_SRP_AUTH"]
   prevent_user_existence_errors = "ENABLED"
 
-  # --- CORREÇÃO FINAL APLICADA AQUI ---
   # Omitindo os atributos para que o Cognito use o padrão.
-  # Isso evita todos os erros de "Invalid read attributes" que estávamos vendo.
 }
 
 # --- 2. IAM ROLE E POLÍTICA PARA A LAMBDA ---
 
 resource "aws_iam_role" "lambda_auth_role" {
-  name = "lambda-auth-cpf-role"
+  name = "lambda-auth-cpf-role-v2"
   assume_role_policy = jsonencode({
     Version   = "2012-10-17",
     Statement = [{
@@ -77,7 +79,7 @@ resource "aws_iam_role" "lambda_auth_role" {
 }
 
 resource "aws_iam_policy" "lambda_auth_policy" {
-  name   = "lambda-auth-cpf-policy"
+  name   = "lambda-auth-cpf-policy-v2"
   policy = jsonencode({
     Version   = "2012-10-17",
     Statement = [
@@ -103,7 +105,7 @@ resource "aws_iam_role_policy_attachment" "lambda_auth_attach" {
 # --- 3. LAMBDA FUNCTION ---
 
 resource "aws_lambda_function" "auth_cpf_lambda" {
-  function_name = "auth-by-cpf"
+  function_name = "auth-by-cpf-v2"
   role          = aws_iam_role.lambda_auth_role.arn
   handler       = "handler.auth_by_cpf"
   runtime       = "python3.9"
@@ -124,7 +126,7 @@ resource "aws_lambda_function" "auth_cpf_lambda" {
 # --- 4. API GATEWAY ---
 
 resource "aws_api_gateway_rest_api" "api" {
-  name = "SistemaPedidos-API"
+  name = "SistemaPedidos-API-v2"
 }
 
 resource "aws_api_gateway_resource" "auth_resource" {
