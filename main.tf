@@ -1,4 +1,13 @@
 # Variável para a região da AWS
+terraform {
+  backend "s3" {
+    # Exemplo de valores
+    bucket = "spoo-ent9-backend"  # <-- NOME DO SEU "COFRE"
+    key    = "gateway-lambda/terraform.tfstate" # <-- ENDEREÇO DO ARQUIVO DENTRO DO COFRE
+    region = "us-east-1"
+  }
+}
+
 variable "aws_region" {
   description = "A região da AWS onde os recursos serão criados."
   type        = string
@@ -43,7 +52,7 @@ resource "aws_cognito_user_pool" "main" {
     attribute_data_type      = "String"
     mutable                  = true
     developer_only_attribute = false # <-- Esta linha torna o atributo pesquisável
-    required                 = true
+    required                 = false
 
     string_attribute_constraints {
       min_length = 11
