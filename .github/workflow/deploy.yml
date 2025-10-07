@@ -1,0 +1,55 @@
+# Este workflow faz tudo: empacota a Lambda, envia para o S3 e executa o Terraform.
+
+name: Deploy API Gateway e Lambda de Autenticação
+
+on:
+  push:
+    branches: [ "main" ] # Altere para 'master' se for o caso
+  pull_request:
+    branches: [ "main" ] # Altere para 'master' se for o caso
+
+jobs:
+  deploy:
+    name: Build, Upload e Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Necessário para autenticação OIDC com a AWS
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciais AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # --- Etapa 1: Preparar o código da Lambda ---
+      - name: Criar pacote de deploy da Lambda (.zip)
+        run: |
+          cd src
+          zip -r ../deployment_package.zip .
+
+      # --- Etapa 2: Enviar o código para o S3 (só no merge) ---
+      - name: Enviar pacote da Lambda para o S3
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          aws s3 cp deployment_package.zip s3://${{ secrets.S3_BUCKET_LAMBDA_CODE }}/auth-by-cpf/deployment_package.zip
+
+      # --- Etapa 3: Executar o Terraform ---
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan -no-color -var="lambda_code_bucket=${{ secrets.S3_BUCKET_LAMBDA_CODE }}"
+
+      - name: Terraform Apply
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: terraform apply -auto-approve -input=false -var="lambda_code_bucket=${{ secrets.S3_BUCKET_LAMBDA_CODE }}"
