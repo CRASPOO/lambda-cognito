@@ -28,9 +28,7 @@ resource "aws_cognito_user_pool" "main" {
     require_uppercase = false
   }
 
-  # --- ALTERAÇÃO APLICADA AQUI (Contexto) ---
-  # Garantimos que o "mapa" do User Pool (o schema) declara oficialmente
-  # os atributos 'email' e 'custom:cpf'. É a fonte da verdade.
+  # Schema Mínimo: Apenas o essencial para o seu fluxo de autenticação
   schema {
     name                = "email"
     attribute_data_type = "String"
@@ -59,12 +57,9 @@ resource "aws_cognito_user_pool_client" "main" {
   explicit_auth_flows           = ["ADMIN_NO_SRP_AUTH"]
   prevent_user_existence_errors = "ENABLED"
 
-  # --- ALTERAÇÃO APLICADA AQUI (A Correção Principal) ---
-  # Reintroduzimos estes blocos para forçar o Terraform a atualizar o App Client.
-  # Agora, ele terá permissão explícita para ler e escrever os atributos
-  # que estão definidos no schema do User Pool, resolvendo a dessincronização.
-  read_attributes  = ["email", "custom:cpf"]
-  write_attributes = ["email", "custom:cpf"]
+  # --- CORREÇÃO FINAL APLICADA AQUI ---
+  # Omitindo os atributos para que o Cognito use o padrão.
+  # Isso evita todos os erros de "Invalid read attributes" que estávamos vendo.
 }
 
 # --- 2. IAM ROLE E POLÍTICA PARA A LAMBDA ---
@@ -199,4 +194,3 @@ output "user_pool_arn" {
   description = "O ARN do Cognito User Pool"
   value       = aws_cognito_user_pool.main.arn
 }
-
