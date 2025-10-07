@@ -57,9 +57,11 @@ resource "aws_cognito_user_pool_client" "main" {
   explicit_auth_flows           = ["ADMIN_NO_SRP_AUTH"]
   prevent_user_existence_errors = "ENABLED"
 
-  # Sincronia Perfeita com o schema, sem atributos extra
-  read_attributes  = ["email", "custom:cpf"]
-  write_attributes = ["email", "custom:cpf"]
+  # --- MUDANÇA APLICADA AQUI ---
+  # Removemos os atributos de leitura/escrita para usar o padrão do Cognito,
+  # evitando o erro de validação.
+  # read_attributes  = ["email", "custom:cpf"] # REMOVIDO
+  # write_attributes = ["email", "custom:cpf"] # REMOVIDO
 }
 
 # --- 2. IAM ROLE E POLÍTICA PARA A LAMBDA ---
@@ -198,3 +200,4 @@ output "user_pool_arn" {
   description = "O ARN do Cognito User Pool"
   value       = aws_cognito_user_pool.main.arn
 }
+
