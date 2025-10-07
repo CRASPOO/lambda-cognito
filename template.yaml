@@ -1,0 +1,37 @@
+# template.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Função Lambda para autenticar usuários via CPF no Cognito.
+
+Resources:
+  # Define a nossa função Lambda
+  AuthCpfFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: auth-by-cpf
+      CodeUri: src/ # Aponta para a pasta com nosso código
+      Handler: handler.auth_by_cpf # O arquivo é 'handler.py' e a função é 'auth_by_cpf'
+      Runtime: python3.9
+      Timeout: 10 # Tempo máximo de execução em segundos
+
+      # Define as variáveis de ambiente que o código Python vai ler
+      Environment:
+        Variables:
+          USER_POOL_ID: "us-east-1_YYtQSezVz" # Substitua pelo seu User Pool ID
+          CLIENT_ID: "camilarspoo@gmail.com"   # Substitua pelo seu App Client ID
+
+      # Define as permissões que a Lambda precisa para executard
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+                - cognito-idp:AdminInitiateAuth
+              Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${USER_POOL_ID}"
+
+Outputs:
+  # Expõe o nome e o ARN da função para ser usado em outras partes da infraestrutura
+  AuthCpfFunctionArn:
+    Description: "ARN da Função Lambda de Autenticação por CPF"
+    Value: !GetAtt AuthCpfFunction.Arn
