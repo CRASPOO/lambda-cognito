@@ -20,7 +20,7 @@ provider "aws" {
 resource "aws_cognito_user_pool" "main" {
   # --- ALTERAÇÃO APLICADA AQUI ---
   # Alterando o nome para forçar a recriação do User Pool
-  name = "SistemaPedidosUserPool-v2"
+  name = "Sistema PedidosUserPool"
 
   password_policy {
     minimum_length    = 8
@@ -55,7 +55,7 @@ resource "aws_cognito_user_pool" "main" {
 resource "aws_cognito_user_pool_client" "main" {
   # --- ALTERAÇÃO APLICADA AQUI ---
   # Alterando o nome para forçar a recriação do App Client
-  name                          = "SistemaPedidosAppClient-v2"
+  name                          = "SistemaPedidosAppClient"
   user_pool_id                  = aws_cognito_user_pool.main.id
   generate_secret               = false
   explicit_auth_flows           = ["ADMIN_NO_SRP_AUTH"]
@@ -67,7 +67,7 @@ resource "aws_cognito_user_pool_client" "main" {
 # --- 2. IAM ROLE E POLÍTICA PARA A LAMBDA ---
 
 resource "aws_iam_role" "lambda_auth_role" {
-  name = "lambda-auth-cpf-role-v2"
+  name = "lambda-auth-cpf-role"
   assume_role_policy = jsonencode({
     Version   = "2012-10-17",
     Statement = [{
@@ -79,7 +79,7 @@ resource "aws_iam_role" "lambda_auth_role" {
 }
 
 resource "aws_iam_policy" "lambda_auth_policy" {
-  name   = "lambda-auth-cpf-policy-v2"
+  name   = "lambda-auth-cpf-policy"
   policy = jsonencode({
     Version   = "2012-10-17",
     Statement = [
@@ -105,7 +105,7 @@ resource "aws_iam_role_policy_attachment" "lambda_auth_attach" {
 # --- 3. LAMBDA FUNCTION ---
 
 resource "aws_lambda_function" "auth_cpf_lambda" {
-  function_name = "auth-by-cpf-v2"
+  function_name = "auth-by-cpf"
   role          = aws_iam_role.lambda_auth_role.arn
   handler       = "handler.auth_by_cpf"
   runtime       = "python3.9"
