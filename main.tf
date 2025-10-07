@@ -15,7 +15,7 @@ provider "aws" {
   region = var.aws_region
 }
 
-# --- 1. AWS Cognito (Agora parte deste projeto) ---
+# --- 1. AWS Cognito ---
 
 resource "aws_cognito_user_pool" "main" {
   name = "SistemaPedidosUserPool"
@@ -28,7 +28,9 @@ resource "aws_cognito_user_pool" "main" {
     require_uppercase = false
   }
 
-  # Schema Mínimo e Corrigido
+  # --- ALTERAÇÃO APLICADA AQUI (Contexto) ---
+  # Garantimos que o "mapa" do User Pool (o schema) declara oficialmente
+  # os atributos 'email' e 'custom:cpf'. É a fonte da verdade.
   schema {
     name                = "email"
     attribute_data_type = "String"
@@ -41,7 +43,7 @@ resource "aws_cognito_user_pool" "main" {
     attribute_data_type      = "String"
     mutable                  = true
     developer_only_attribute = false
-    required                 = false # Não obrigatório na criação
+    required                 = false
 
     string_attribute_constraints {
       min_length = 11
@@ -57,11 +59,12 @@ resource "aws_cognito_user_pool_client" "main" {
   explicit_auth_flows           = ["ADMIN_NO_SRP_AUTH"]
   prevent_user_existence_errors = "ENABLED"
 
-  # --- MUDANÇA APLICADA AQUI ---
-  # Removemos os atributos de leitura/escrita para usar o padrão do Cognito,
-  # evitando o erro de validação.
-  # read_attributes  = ["email", "custom:cpf"] # REMOVIDO
-  # write_attributes = ["email", "custom:cpf"] # REMOVIDO
+  # --- ALTERAÇÃO APLICADA AQUI (A Correção Principal) ---
+  # Reintroduzimos estes blocos para forçar o Terraform a atualizar o App Client.
+  # Agora, ele terá permissão explícita para ler e escrever os atributos
+  # que estão definidos no schema do User Pool, resolvendo a dessincronização.
+  read_attributes  = ["email", "custom:cpf"]
+  write_attributes = ["email", "custom:cpf"]
 }
 
 # --- 2. IAM ROLE E POLÍTICA PARA A LAMBDA ---
@@ -86,7 +89,6 @@ resource "aws_iam_policy" "lambda_auth_policy" {
       {
         Action   = ["cognito-idp:ListUsers", "cognito-idp:AdminInitiateAuth"],
         Effect   = "Allow",
-        # Referência direta ao User Pool criado neste arquivo
         Resource = aws_cognito_user_pool.main.arn
       },
       {
@@ -113,13 +115,10 @@ resource "aws_lambda_function" "auth_cpf_lambda" {
 
   s3_bucket        = var.lambda_code_bucket
   s3_key           = "auth-by-cpf/deployment_package.zip"
-  # O hash do código é importante para o Terraform detectar mudanças no .zip
-  # O arquivo .zip precisa existir na pasta raiz antes de rodar 'plan' ou 'apply'
   source_code_hash = filebase64sha256("deployment_package.zip")
 
   environment {
     variables = {
-      # Referências diretas aos recursos do Cognito
       USER_POOL_ID = aws_cognito_user_pool.main.id
       CLIENT_ID    = aws_cognito_user_pool_client.main.id
     }
