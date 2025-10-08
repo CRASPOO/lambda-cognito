@@ -59,7 +59,7 @@ resource "aws_cognito_user_pool" "main" {
     }
   }
 
-username_attributes = ["cpf"]
+
 }
 
 
