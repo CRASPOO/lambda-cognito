@@ -19,21 +19,21 @@ def auth_by_cpf(event, context):
     try:
         # O corpo da requisição vem como uma string, então precisamos convertê-lo para um dicionário Python
         body = json.loads(event.get('body', '{}'))
-        username = body.get('username')
+        name = body.get('name')
 
         # 1. Validação de entrada: Garante que o CPF foi enviado
-        if not username:
+        if not name:
             return {
                 'statusCode': 400,
                 'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Parâmetro "username" é obrigatório'})
+                'body': json.dumps({'error': 'Parâmetro "name" é obrigatório'})
             }
 
         # 2. Etapa A: Encontrar o usuário pelo atributo custom:cpf
         # Simula o comando `aws cognito-idp list-users --filter ...`
         response = cognito_client.list_users(
             UserPoolId=USER_POOL_ID,
-            Filter=f"custom:username = \"{username}\""
+            Filter=f"custom:name = \"{name}\""
         )
 
         if not response['Users']:
@@ -44,7 +44,7 @@ def auth_by_cpf(event, context):
             }
 
         # Pega o nome de usuário interno do Cognito, que é necessário para a próxima etapa
-        username = response['Users'][0]['Username']
+        username = response['Users'][0]['name']
 
         # 3. Etapa B: Iniciar a autenticação e gerar o token (JWT)
         # Simula o comando `aws cognito-idp admin-initiate-auth ...`
