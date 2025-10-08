@@ -39,17 +39,18 @@ resource "aws_cognito_user_pool" "main" {
     require_uppercase = false
   }
 
+  alias_attributes = ["e-mail"]
   # Schema Mínimo: Apenas o essencial para o seu fluxo de autenticação
   schema {
-    name                     = "name"
+    name                     = "e-mail"
     attribute_data_type      = "String"
     mutable                  = true
-    developer_only_attribute = false
+    required                 = true
 
-    string_attribute_constraints {
-      min_length = 11
-      max_length = 11
-    }
+#    string_attribute_constraints {
+#      min_length = 11
+#      max_length = 11
+#    }
   }
 
 
