@@ -48,18 +48,19 @@ resource "aws_cognito_user_pool" "main" {
   }
 
   schema {
-    name                     = "custom:cpf"
+    name                     = "cpf"
     attribute_data_type      = "String"
-    mutable                  = true
-    developer_only_attribute = false # <-- Esta linha torna o atributo pesquisável
+    mutable                  = false
     required                 = true
 
     string_attribute_constraints {
       min_length = 11
-      max_length = 14
+      max_length = 11
     }
   }
 }
+
+username_attributes = ["cpf"]
 
 resource "aws_cognito_user_pool_client" "main" {
   # --- ALTERAÇÃO APLICADA AQUI ---
