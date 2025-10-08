@@ -18,7 +18,9 @@ Pré-requisitos
 Para executar este projeto localmente, você precisará ter instalado:
 
 •	AWS CLI
+
 •	AWS SAM CLI
+
 •	Python 3.9+
 
 Configuração
@@ -36,13 +38,18 @@ Deploy
 O deploy desta função é automatizado via GitHub Actions.
 
 •	Toda alteração enviada para a branch main através de um Pull Request acionará a esteira de CI/CD.
+
 •	A Action irá automaticamente construir o pacote da aplicação (sam build) e enviá-lo para um bucket S3.
+
 •	Uma outra esteira no repositório de infraestrutura (Terraform) é responsável por implantar a nova versão da Lambda, apontando para o artefato no S3.
 
 API
 Autenticar Usuário
+
 •	Endpoint: POST /auth
+
 •	Descrição: Autentica um usuário com base no seu username e retorna tokens JWT.
+
 Corpo da Requisição (Request Body):
 
 {
@@ -58,6 +65,8 @@ Resposta de Sucesso (200 OK):
 
 Respostas de Erro:
 
-•	400 Bad Request: Se o parâmetro username não for enviado ou se o corpo da requisição não for um JSON válido.
+•	400 Bad Request: Se o parâmetro username não for enviado ou se o corpo da requisição não for um JSON válido
+
 •	404 Not Found: Se nenhum usuário for encontrado com o username fornecido.
+
 •	500 Internal Server Error: Para erros inesperados no servidor.
