@@ -33,7 +33,7 @@ def auth_by_cpf(event, context):
         # Simula o comando `aws cognito-idp list-users --filter ...`
         response = cognito_client.list_users(
             UserPoolId=USER_POOL_ID,
-            Filter=f"custom:name = \"{name}\""
+            Filter=f"name = \"{name}\""
         )
 
         if not response['Users']:
