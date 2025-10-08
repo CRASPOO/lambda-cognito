@@ -18,8 +18,8 @@ Resources:
       # Define as variáveis de ambiente que o código Python vai ler
       Environment:
         Variables:
-          USER_POOL_ID: "us-east-1_f4MCoSgab" # Substitua pelo seu User Pool ID
-          CLIENT_ID: "79etgf05n0l3j1295e2qlhkk8m"   # Substitua pelo seu App Client ID
+          USER_POOL_ID: "us-east-1_YeLF2QNte" # Substitua pelo seu User Pool ID
+          CLIENT_ID: "32n2cg4hprccm99nsjqaj2m4i3"   # Substitua pelo seu App Client ID
 
       # Define as permissões que a Lambda precisa para executard
       Policies:
