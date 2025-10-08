@@ -52,7 +52,7 @@ resource "aws_cognito_user_pool" "main" {
     attribute_data_type      = "String"
     mutable                  = true
     developer_only_attribute = false # <-- Esta linha torna o atributo pesquisável
-    required                 = false
+    required                 = true
 
     string_attribute_constraints {
       min_length = 11
