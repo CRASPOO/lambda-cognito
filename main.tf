@@ -41,17 +41,10 @@ resource "aws_cognito_user_pool" "main" {
 
   # Schema Mínimo: Apenas o essencial para o seu fluxo de autenticação
   schema {
-    name                = "email"
-    attribute_data_type = "String"
-    mutable             = true
-    required            = false
-  }
-
-  schema {
-    name                     = "cpf"
+    name                     = "username"
     attribute_data_type      = "String"
-    mutable                  = false
-    required                 = true
+    mutable                  = true
+    developer_only_attribute = false
 
     string_attribute_constraints {
       min_length = 11
