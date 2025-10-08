@@ -44,7 +44,7 @@ def auth_by_cpf(event, context):
             }
 
         # Pega o nome de usuário interno do Cognito, que é necessário para a próxima etapa
-        username = response['Users'][0]['username']
+        username = response['Users'][0]['Username']
 
         # 3. Etapa B: Iniciar a autenticação e gerar o token (JWT)
         # Simula o comando `aws cognito-idp admin-initiate-auth ...`
