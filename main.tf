@@ -58,9 +58,11 @@ resource "aws_cognito_user_pool" "main" {
       max_length = 11
     }
   }
-}
 
 username_attributes = ["cpf"]
+}
+
+
 
 resource "aws_cognito_user_pool_client" "main" {
   # --- ALTERAÇÃO APLICADA AQUI ---
